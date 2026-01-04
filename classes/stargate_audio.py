@@ -1,6 +1,7 @@
 from os import listdir, path, walk
 from random import choice
 import subprocess
+import os
 import simpleaudio as sa
 
 class StargateAudio:
@@ -16,7 +17,13 @@ class StargateAudio:
 
         # Make ready the sound effects
         self.sounds = {}
-        self.sounds['rolling_ring'] = { 'file': sa.WaveObject.from_wave_file(str(self.sound_fx_root + "/roll.wav")) }
+        try:
+            self.sounds['rolling_ring'] = { 'file': sa.WaveObject.from_wave_file(str(self.sound_fx_root + "/roll.wav")) }
+        except (FileNotFoundError, OSError) as e:
+            roll_wav_path = str(self.sound_fx_root + "/roll.wav")
+            self.log.log(f"Warning: Could not load audio file {roll_wav_path}")
+            # Set to None so code that uses it can check for this
+            self.sounds['rolling_ring'] = { 'file': None }
 
         self.sounds['dialing_cancel'] = { 'file': self.init_wav_file( "/cancel.wav" ) }
         self.sounds['dialing_fail'] =   { 'file': self.init_wav_file( "/dial_fail_sg1.wav" ) }
@@ -32,7 +39,8 @@ class StargateAudio:
         self.sounds['chevron_5'] = { 'file': self.init_wav_file( "/chev_usual_5.wav" ) }
         self.sounds['chevron_6'] = { 'file': self.init_wav_file( "/chev_usual_6.wav" ) }
         self.sounds['chevron_7'] = { 'file': self.init_wav_file( "/chev_usual_7.wav" ) }
-        self.incoming_chevron_sounds = [ self.sounds['chevron_4'],  self.sounds['chevron_5'],  self.sounds['chevron_6'],  self.sounds['chevron_7'] ]
+        # Filter out None files (missing audio files) from incoming_chevron_sounds
+        self.incoming_chevron_sounds = [ sound for sound in [ self.sounds['chevron_4'],  self.sounds['chevron_5'],  self.sounds['chevron_6'],  self.sounds['chevron_7'] ] if sound['file'] is not None ]
 
         self.random_clip = None
 
@@ -45,6 +53,10 @@ class StargateAudio:
     def sound_start(self, clip_name):
         if self.cfg.get('audio_enable'):
             try:
+                # Check if the file is None (e.g., missing roll.wav)
+                if self.sounds[clip_name]['file'] is None:
+                    self.log.log(f"Cannot play {clip_name} - audio file not loaded")
+                    return
                 self.sounds[clip_name]['obj'] = self.sounds[clip_name]['file'].play()
             except: #pylint: disable=bare-except
                 self.log.log("Failed to start audio file - is the USB Audio adapter installed?")
@@ -59,11 +71,19 @@ class StargateAudio:
         return False
 
     def init_wav_file(self, file_path):
-        return sa.WaveObject.from_wave_file(str(self.sound_fx_root + "/" + file_path))
+        full_path = str(self.sound_fx_root + "/" + file_path)
+        try:
+            return sa.WaveObject.from_wave_file(full_path)
+        except (FileNotFoundError, OSError) as e:
+            self.log.log(f"Warning: Could not load audio file {full_path}")
+            return None
 
     def incoming_chevron(self):
         if self.cfg.get('audio_enable'):
             try:
+                if not self.incoming_chevron_sounds:
+                    self.log.log("Cannot play incoming chevron sound - no audio files available")
+                    return
                 choice(self.incoming_chevron_sounds)['file'].play()
             except: #pylint: disable=bare-except
                 self.log.log("Failed to start audio file - is the USB Audio adapter installed?")
@@ -84,18 +104,33 @@ class StargateAudio:
             return
 
         path_to_folder = self.sound_fx_root + "/" + directory
-        rand_file = choice(listdir(path_to_folder))
-        filepath =  path.join(path_to_folder, rand_file)
+        
+        try:
+            files = listdir(path_to_folder)
+        except (FileNotFoundError, OSError) as e:
+            self.log.log(f"Warning: Could not access audio directory {path_to_folder}: {e}")
+            return
 
-        while not path.isfile(filepath): # If the rand_file is not a file. (If it's a directory)
-            rand_file = choice(listdir(path_to_folder)) # Choose a new one.
-            filepath = path.join(path_to_folder, rand_file) # Update Filepath
-        clip = sa.WaveObject.from_wave_file(path_to_folder + '/' + rand_file)
+        if not files:
+            self.log.log(f"Warning: Audio directory {path_to_folder} is empty")
+            return
 
         try:
-            self.random_clip = clip.play()
-        except: #pylint: disable=bare-except
-            self.log.log("Failed to start audio file - is the USB Audio adapter installed?")
+            rand_file = choice(files)
+            filepath = path.join(path_to_folder, rand_file)
+
+            while not path.isfile(filepath): # If the rand_file is not a file. (If it's a directory)
+                rand_file = choice(files) # Choose a new one.
+                filepath = path.join(path_to_folder, rand_file) # Update Filepath
+            
+            clip = sa.WaveObject.from_wave_file(path_to_folder + '/' + rand_file)
+
+            try:
+                self.random_clip = clip.play()
+            except: #pylint: disable=bare-except
+                self.log.log("Failed to start audio file - is the USB Audio adapter installed?")
+        except (FileNotFoundError, OSError) as e:
+            self.log.log(f"Warning: Could not load audio file from {path_to_folder}: {e}")
 
         return
 
@@ -127,6 +162,11 @@ class StargateAudio:
         This function gets the card number for the USB audio adapter.
         :return: It will return a number (string) that should correspond to the card number for the USB adapter. If it can't find it, it returns 1
         """
+        # Skip on macOS - aplay is Linux/Raspberry Pi specific
+        is_macos = os.uname().sysname == "Darwin"
+        if is_macos:
+            return 1
+        
         try:
             audio_devices = subprocess.run(['aplay', '-l'], capture_output=True, text=True, check=False).stdout.splitlines() #TODO: Check should be true, throws exception if non-zero exit code
             for line in audio_devices:
@@ -142,6 +182,11 @@ class StargateAudio:
         This function gets the active audio card number from the /usr/share/alsa/alsa.conf file.
         :return: It will return an integer that should correspond to the card number for the USB adapter. If it can't find it, it returns 1
         """
+        # Skip on macOS - ALSA config file is Linux/Raspberry Pi specific
+        is_macos = os.uname().sysname == "Darwin"
+        if is_macos:
+            return None
+        
         # Get the contents of the file
         try:
             with open('/usr/share/alsa/alsa.conf', 'r', encoding="utf8") as alsa_file:
@@ -159,6 +204,11 @@ class StargateAudio:
         :return: Nothing is returned
         """
 
+        # Skip this on macOS - ALSA configuration is Linux/Raspberry Pi specific
+        is_macos = os.uname().sysname == "Darwin"
+        if is_macos:
+            return
+
         # pylint: disable=anomalous-backslash-in-string
 
         try:
@@ -169,8 +219,8 @@ class StargateAudio:
                 ctl = 'defaults.ctl.card ' + str(self.get_usb_audio_device_card_number())
                 pcm = 'defaults.pcm.card ' + str(self.get_usb_audio_device_card_number())
                 # replace the lines in the alsa.conf file.
-                subprocess.run(['sudo', 'sed', '-i', f"/defaults.ctl.card /c\{ctl}", '/usr/share/alsa/alsa.conf'], check=False) #TODO: Check should be true
-                subprocess.run(['sudo', 'sed', '-i', f"/defaults.pcm.card /c\{pcm}", '/usr/share/alsa/alsa.conf'], check=False) #TODO: Check should be true
+                subprocess.run(['sudo', 'sed', '-i', rf"/defaults.ctl.card /c\{ctl}", '/usr/share/alsa/alsa.conf'], check=False) #TODO: Check should be true
+                subprocess.run(['sudo', 'sed', '-i', rf"/defaults.pcm.card /c\{pcm}", '/usr/share/alsa/alsa.conf'], check=False) #TODO: Check should be true
         except subprocess.CalledProcessError:
             self.log.log("Failed to set audio adapter config")
 

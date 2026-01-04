@@ -247,7 +247,7 @@ class SoftwareUpdateV2:
 
                 self.log.log(f'Installing Python dependencies from {file_name}...')
                 subprocess.check_call(
-                    [sys.executable, "-m", "pip", "install", "-r", os.path.join(self.app.base_path, file_name)],
+                    [sys.executable, "-m", "pip", "install", "--upgrade", "-r", os.path.join(self.app.base_path, file_name)],
                     timeout=600
                 )
             except subprocess.TimeoutExpired:

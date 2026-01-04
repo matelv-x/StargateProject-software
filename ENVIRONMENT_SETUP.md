@@ -5,11 +5,20 @@ It is **highly** recommended to build your gate by using the pre-built Disk Imag
 
 The majority of the installation is completed by a script at `sg1_v4/install/install.sh`, but we need to get the basics configured first.
 
+## Supported Hardware and OS
+
+This software should support:
+- **Raspberry Pi Models**: 3B+, 4 (all variants), 5 (all variants)
+- **Raspberry Pi OS Versions**: Bullseye, Bookworm, and later (Debian 11+)
+- **Python Versions**: 3.9+ (Python 3.9 on Bullseye, 3.11 on Bookworm, 3.12+ on Trixie)
+
 ## Flash the SD Card with Raspbian
 1. Download the [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
 2. Open the Imager, and click "Choose OS."
 3. Click on "Raspberry Pi OS (Other)"
-4. Select _Raspberry Pi OS Lite (32-bit)_ (At the time of this writing: Debian v11/"Bullseye")
+4. Select _Raspberry Pi OS Lite (32-bit)_ or _Raspberry Pi OS Lite (64-bit)_
+   - **Note**: For Raspberry Pi 5, use 64-bit. For Pi 3B+ and Pi 4, either 32-bit or 64-bit will work.
+   - Supported OS versions: Bullseye (Debian 11), Bookworm (Debian 12), or later
 5. Click Choose Storage, and select your SD card.
 6. Click on the GEAR icon in the bottom right corner. Configure some settings:
   - Set Hostname: `YES` (`stargate`)

@@ -4,6 +4,20 @@
 
 Software for Kristian's Fully Functional 3D Printed Stargate
 
+## Supported Hardware
+
+This software supports the following Raspberry Pi models:
+- Raspberry Pi 3B+
+- Raspberry Pi 4 (all variants)
+- Raspberry Pi 5 (all variants)
+
+## Supported Operating Systems
+
+This software supports Raspberry Pi OS versions from Bullseye onward:
+- Raspberry Pi OS Bullseye (Debian 11) - Python 3.9
+- Raspberry Pi OS Bookworm (Debian 12) - Python 3.11
+- Raspberry Pi OS Trixie (Debian 13) - Python 3.12+
+
 ## Setup Instructions:
 It is _highly_ recommended to build your gate by using the pre-built Disk Image (ISO) provided by Kristian.
  - If you are **upgrading an existing gate** read this first: [UPGRADING_FROM_V3.X.md](UPGRADING_FROM_V3.X.md)

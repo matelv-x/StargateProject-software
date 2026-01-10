@@ -115,8 +115,12 @@ class NetworkTools:
 
     @staticmethod
     def ping(ping_ip):
-        if ping(ping_ip, count=1, timeout=1).is_alive:
-            return True
+        try:
+            if ping(ping_ip, count=1, timeout=1).is_alive:
+                return True
+        except SocketPermissionError:
+            # ICMP ping requires root privileges - skip on macOS/development
+            pass
         return False
 
     def get_stargate_server_ip(self):

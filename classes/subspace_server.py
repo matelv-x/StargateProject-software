@@ -2,6 +2,7 @@ import socket
 from threading import Thread
 from time import sleep
 from icmplib import ping
+from icmplib.exceptions import SocketPermissionError
 
 import subspace_messages
 
@@ -74,7 +75,11 @@ class SubspaceServer:
 
             if time_since_last_ping >= self.keep_alive_interval:
                 #self.log.log("Sending keepalive ping")
-                ping(remote_addr, count=1, timeout=1)
+                try:
+                    ping(remote_addr, count=1, timeout=1)
+                except SocketPermissionError:
+                    # ICMP ping requires root privileges - skip on macOS/development
+                    pass
                 time_since_last_ping = 0
             else:
                 time_since_last_ping+=self.keep_alive_running_check_interval

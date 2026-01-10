@@ -63,7 +63,12 @@ class StargateAudio:
 
     def sound_stop(self, clip_name):
         if self.cfg.get('audio_enable'):
-            self.sounds[clip_name]['obj'].stop()
+            try:
+                self.sounds[clip_name]['obj'].stop()
+            except KeyError:
+                self.log.log(f"Debug: Would stop sound '{clip_name}' but it was never started (not in sounds dictionary)")
+            except (AttributeError, TypeError) as e:
+                self.log.log(f"Debug: Would stop sound '{clip_name}' but it has no active playback object: {e}")
 
     def is_playing(self, clip_name):
         if self.cfg.get('audio_enable'):

@@ -79,7 +79,7 @@ class SubspaceServer:
                     ping(remote_addr, count=1, timeout=1)
                 except SocketPermissionError:
                     # ICMP ping requires root privileges - skip on macOS/development
-                    pass
+                    self.log.log("ICMP ping requires root privileges - skipping.
                 time_since_last_ping = 0
             else:
                 time_since_last_ping+=self.keep_alive_running_check_interval

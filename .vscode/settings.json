@@ -1,0 +1,16 @@
+{
+    // Python settings for this workspace
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv_dev/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/classes",
+        "${workspaceFolder}/classes/StargateMilkyWay",
+        "${workspaceFolder}/config"
+    ],
+    // Enable linting with pylint
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintPath": "${workspaceFolder}/venv_dev/bin/pylint"
+}
+

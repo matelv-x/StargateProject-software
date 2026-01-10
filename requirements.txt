@@ -36,3 +36,6 @@ keyboard~=0.13.5
 gitpython>=3.1.27
 rollbar>=0.16.2
 python-dotenv>=1.0.1
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+aiofiles>=23.2.0

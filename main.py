@@ -9,9 +9,7 @@ This main.py file is run automatically on boot. It is executed in a systemd daem
 import sys
 import os
 from time import sleep
-from http.server import HTTPServer
 from dotenv import load_dotenv, dotenv_values
-import threading
 import atexit
 import schedule
 import rollbar
@@ -24,7 +22,7 @@ from stargate_config import StargateConfig
 from ancients_log_book import AncientsLogBook
 from software_update_v2 import SoftwareUpdateV2
 from stargate_audio import StargateAudio
-from web_server import StargateWebServer
+from web_server_async import StargateWebServerAsync
 
 GALAXY = "Milky Way"
 
@@ -56,7 +54,9 @@ class GateApplication:
         self.galaxy_path = self.galaxy.replace(" ", "").lower()
 
         # Check that we're running with root-like permissions (sudo)
-        if not os.geteuid() == 0:
+        # Skip this check on macOS/Darwin for development
+        is_macos = os.uname().sysname == "Darwin"
+        if not is_macos and not os.geteuid() == 0:
             message = "The Stargate software must run with root-like permissions (use sudo)"
             print(message)
             print("Stopping startup.")
@@ -119,14 +119,23 @@ class GateApplication:
 
         ### Start the web server
         try:
-            StargateWebServer.stargate = self.stargate
-            self.httpd_server = HTTPServer(('', self.cfg.get("control_api_server_port")), StargateWebServer)
-            self.httpd_thread = threading.Thread(name="stargate-http", target=self.httpd_server.serve_forever)
-            self.httpd_thread.daemon = True
-            self.httpd_thread.start()
-            self.log.log(f'Web Services API running on: {self.net_tools.get_local_ip()}:{self.cfg.get("control_api_server_port")}')
-        except:
-            self.log.log("Failed to start webserver. Is the port in use?")
+            server_port = self.cfg.get("control_api_server_port")
+            self.web_server = StargateWebServerAsync(self.stargate, self.base_path, server_port)
+            self.web_server.start()
+            server_ip = self.net_tools.get_local_ip()
+            self.log.log(f'Web Services API running on: {server_ip}:{server_port}')
+            # Print to console for user visibility (especially in development/non-daemon mode)
+            if not self.is_daemon:
+                print(f'\n{"="*60}', flush=True)
+                print(f'Web Server is running!', flush=True)
+                print(f'Access the web interface at: http://localhost:{server_port}', flush=True)
+                print(f'Or from another device: http://{server_ip}:{server_port}', flush=True)
+                print(f'{"="*60}\n', flush=True)
+        except Exception as e:
+            error_msg = f"Failed to start webserver on port {server_port}: {e}"
+            self.log.log(error_msg)
+            if not self.is_daemon:
+                print(f"ERROR: {error_msg}", flush=True)
             rollbar.report_message('API Server: Failed to start', 'error')
             raise
 
@@ -138,7 +147,8 @@ class GateApplication:
 
     def cleanup(self):
         self.stargate.ring.release()      # Release the ring when exiting. Just in case.
-        self.httpd_server.shutdown()
+        if hasattr(self, 'web_server'):
+            self.web_server.shutdown()
         #self.log_tail_server.terminate()
 
         self.log.log('The Stargate program is no longer running\r\n\r\n')

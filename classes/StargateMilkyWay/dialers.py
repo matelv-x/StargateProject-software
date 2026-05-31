@@ -211,6 +211,8 @@ class DHDv2:
         # A list for places to check for the DHD
         possible_files = [
             configured_port,
+            "/dev/serial/by-id/usb-SparkFun_SparkFun_Pro_Micro_HIDPC-if00",
+            *sorted(glob("/dev/serial/by-id/*SparkFun*Pro_Micro*")),
             "/dev/serial/by-id/usb-Adafruit_ItsyBitsy_32u4_5V_16MHz_HIDPC-if00",
             *sorted(glob("/dev/serial/by-id/*ItsyBitsy*")),
             "/dev/ttyACM0",

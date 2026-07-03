@@ -1,4 +1,6 @@
 # [TheStargateProject.com](https://TheStargateProject.com)
+[![Downloads](https://img.shields.io/github/downloads/matelv-x/StargateProject-software/total?label=downloads)](https://github.com/matelv-x/StargateProject-software/releases)
+
 ![GitHub License](https://img.shields.io/github/license/jonnerd154/StargateProject-software)
 [![Generate Raspberry Pi OS Image](https://github.com/jonnerd154/StargateProject-software/actions/workflows/rpi.yml/badge.svg)](https://github.com/jonnerd154/StargateProject-software/actions/workflows/rpi.yml)
 

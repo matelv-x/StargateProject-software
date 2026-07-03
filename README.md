@@ -4,7 +4,7 @@
 ![GitHub License](https://img.shields.io/github/license/jonnerd154/StargateProject-software)
 [![Generate Raspberry Pi OS Image](https://github.com/jonnerd154/StargateProject-software/actions/workflows/rpi.yml/badge.svg)](https://github.com/jonnerd154/StargateProject-software/actions/workflows/rpi.yml)
 
-Software for Kristian's Fully Functional 3D Printed Stargate
+Software for Kristian's Fully Functional 3D Printed Stargate.
 
 ## Setup Instructions:
 It is _highly_ recommended to build your gate by using the pre-built Disk Image (ISO) provided by Kristian.
